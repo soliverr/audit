@@ -1,0 +1,158 @@
+--
+-- Package: audit
+--
+-- Install script
+--
+
+prompt
+prompt I: Start installation
+prompt
+
+--
+-- Load ORADBA schema variables
+@@confdir@/schema-define
+
+--
+-- Load package variables
+@@confdir@/@PACKAGE_NAME@-define
+
+--
+-- Disable current audit trigger
+prompt
+prompt "I: Disabling audit trigger ..."
+prompt
+
+variable txt varchar2(128);
+begin
+  select object_name into :txt
+    from all_objects
+   where owner = '&&ORA_SCHEMA_OWNER' and object_name = 'ORADBA_AUDIT_DDL' and object_type = 'TRIGGER';
+  execute immediate 'alter trigger '||'&&ORA_SCHEMA_OWNER'||'.oradba_audit_ddl disable';
+  dbms_output.put_line( CHR(10) || 'I: Trigger &&ORA_SCHEMA_OWNER..oradba_audit_ddl disabled' );
+exception
+  when NO_DATA_FOUND then
+    NULL;
+end;
+/
+
+prompt
+prompt I: Setting grants ...
+prompt
+--
+-- Grant tablespace rights
+alter user &&ORA_SCHEMA_OWNER quota unlimited on &&ORA_TBSP_TBLS;
+alter user &&ORA_SCHEMA_OWNER quota unlimited on &&ORA_TBSP_INDX;
+--
+-- Grant system rights
+grant select on sys.v_$mystat           to &&ORA_SCHEMA_OWNER;
+grant select on sys.v_$instance         to &&ORA_SCHEMA_OWNER;
+grant select on sys.v_$session          to &&ORA_SCHEMA_OWNER;
+grant select on sys.v_$open_cursor      to &&ORA_SCHEMA_OWNER;
+
+set echo off
+spool @spooldir@/@PACKAGE_NAME@.sql
+
+declare
+  cur$action integer := sqlinstaller.ACTION_MODIFY;
+  cur$owner  sys.all_users.username%type := '&&ORA_SCHEMA_OWNER';
+  cur$cfg    sqlinstaller_config_type;
+begin
+  -- By default all actions are enabled
+  cur$cfg := sqlinstaller_config_type( NULL, NULL,
+                                       sqlinstaller.action_any, sqlinstaller.enabled );
+
+  dbms_output.put_line( CHR(10) || '-- START ACTION --' );
+
+  dbms_output.put_line( 'set verify off' );
+
+  dbms_output.put_line( 'prompt' );
+  dbms_output.put_line( 'prompt I: Creating role ...' );
+  dbms_output.put_line( 'prompt' );
+  cur$cfg.object_name := '&&ORA_ROLE_NAME';
+  cur$cfg.object_type := sqlinstaller.p_role;
+  sqlinstaller.cfg_set( cur$cfg );
+  sqlinstaller.do_role( cur$action, '&&ORA_ROLE_NAME', '@datadir@/create_role' );
+
+  dbms_output.put_line( 'define ORA_SCHEMA_OWNER = ' || cur$owner );
+  dbms_output.put_line( 'alter session set current_schema = ' || cur$owner || ';' );
+  dbms_output.put_line( 'prompt' );
+  dbms_output.put_line( 'prompt I: Current schema is ' || cur$owner );
+  dbms_output.put_line( 'prompt' );
+
+  cur$cfg.object_name := cur$owner||'.oradba$audit_log';
+  cur$cfg.object_type := sqlinstaller.p_table;
+  sqlinstaller.cfg_set( cur$cfg );
+  dbms_output.put_line( 'prompt' );
+  dbms_output.put_line( 'prompt I: Creating tables ...' );
+  dbms_output.put_line( 'prompt' );
+  sqlinstaller.do_table( cur$action, cur$owner||'.oradba$audit_log', '@datadir@/tables/audit_log' );
+  dbms_output.put_line( 'grant select on "&&ORA_SCHEMA_OWNER".oradba$audit_log to &&ORA_ROLE_NAME;' );
+
+  dbms_output.put_line( 'prompt' );
+  dbms_output.put_line( 'prompt I: Creating procedures ...' );
+  dbms_output.put_line( 'prompt' );
+  cur$cfg.object_name := cur$owner || '.oradba_audit_ddl_proc';
+  cur$cfg.object_type := sqlinstaller.p_procedure;
+  sqlinstaller.cfg_set( cur$cfg );
+  sqlinstaller.do_procedure( cur$action, cur$owner||'.oradba_audit_ddl_proc', '@datadir@/procedures/oradba_audit_ddl_proc_w' );
+  cur$cfg.object_name := cur$owner || '.oradba_audit_clean';
+  cur$cfg.object_type := sqlinstaller.p_procedure;
+  sqlinstaller.cfg_set( cur$cfg );
+  sqlinstaller.do_procedure( cur$action, cur$owner||'.oradba_audit_clean', '@datadir@/procedures/oradba_audit_clean_w' );
+
+  dbms_output.put_line( 'prompt' );
+  dbms_output.put_line( 'prompt I: Creating triggers ...' );
+  dbms_output.put_line( 'prompt' );
+  cur$cfg.object_name := cur$owner || '.oradba_audit_ddl';
+  cur$cfg.object_type := sqlinstaller.p_trigger;
+  sqlinstaller.cfg_set( cur$cfg );
+  sqlinstaller.do_trigger( cur$action, cur$owner||'.oradba_audit_ddl', '@datadir@/create_trigger' );
+
+  dbms_output.put_line( 'alter session set current_schema = &&l_cur_schema;' );
+
+  dbms_output.put_line( CHR(10) || '-- END ACTION --' );
+end;
+/
+spool off
+
+alter session set current_schema = &&l_cur_schema;
+
+-- Execute generated install script
+host sed --in-place '1, /^-- START ACTION --/d; /^-- END ACTION --/,$d' @spooldir@/@PACKAGE_NAME@.sql
+@@spooldir@/@PACKAGE_NAME@.sql
+
+-- Remove spool file
+host rm -f @spooldir@/@PACKAGE_NAME@.sql
+
+-- Cleaning job executed under public user &&ORA_SCHEMA_CLEANER
+-- Execution rights setted by role &&ORADBA_ROLE_CLEANER
+grant execute on &&ORA_SCHEMA_OWNER..oradba_audit_clean to &&ORADBA_ROLE_CLEANER;
+grant execute on &&ORA_SCHEMA_OWNER..oradba_audit_clean to &&ORA_SCHEMA_CLEANER;
+
+
+prompt
+prompt I: Creating job ...
+prompt
+@@datadir@/create_job
+
+-- Enable audit trigger
+prompt
+prompt "I: Enabling audit trigger ..."
+prompt
+
+variable txt varchar2(128);
+begin
+  select object_name into :txt
+    from all_objects
+   where owner = '&&ORA_SCHEMA_OWNER' and object_name = 'ORADBA_AUDIT_DDL' and object_type = 'TRIGGER';
+  execute immediate 'alter trigger '||'&&ORA_SCHEMA_OWNER'||'.oradba_audit_ddl enable';
+  dbms_output.put_line( CHR(10) || 'I: Trigger &&ORA_SCHEMA_OWNER..oradba_audit_ddl enabled' );
+exception
+  when NO_DATA_FOUND then
+    NULL;
+end;
+/
+
+prompt
+prompt "I: Finish installation"
+prompt

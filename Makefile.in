@@ -1,0 +1,136 @@
+#
+#
+
+SHELL           = /bin/bash
+INSTALL         = install
+WRAP            = $(ORACLE_HOME)/bin/wrap
+top_srcdir      = @top_srcdir@
+srcdir          = @srcdir@
+VPATH           = @srcdir@
+
+# Package identification -----------------------------------------------------------------
+PACKAGE_NAME    = @PACKAGE_NAME@
+PACKAGE_TARNAME = @PACKAGE_TARNAME@
+PACKAGE_VERSION = @PACKAGE_VERSION@
+PACKAGE_STRING  = @PACKAGE_STRING@
+
+# Base directories -----------------------------------------------------------------------
+prefix          = @prefix@
+exec_prefix     = @exec_prefix@
+sbindir         = @sbindir@
+bindir          = @bindir@
+libdir          = @libdir@
+libexecdir      = @libexecdir@
+sysconfdir      = @sysconfdir@
+confdir         = @confdir@
+localstatedir   = @localstatedir@
+datarootdir     = @datarootdir@
+datadir         = @datadir@
+logdir          = @logdir@
+docdir          = @docdir@
+spooldir        = @spooldir@
+
+# Destination dir
+DESTDIR         =
+
+.PHONY: expand
+.PHONY: install install-dirs install-base-dirs install-docs install-files install-logrotate install-config
+.PHONY: install-sql install-sh
+.PHONY: clean distclean mostlyclean
+
+install: expand install-dirs install-docs install-files
+
+expand: install.sql uninstall.sql _pkg-functions
+	chmod +x $(srcdir)/build_expand.sh
+	$(srcdir)/build_expand.sh install.sql uninstall.sql _pkg-functions
+
+install-base-dirs:
+	# Create base directories
+	$(INSTALL) --directory --mode 755 $(DESTDIR)$(confdir)
+	$(INSTALL) --directory --mode 755 $(DESTDIR)$(logdir)
+	$(INSTALL) --directory --mode 755 $(DESTDIR)$(datadir)/{procedures,tables}
+
+install-dirs: install-base-dirs
+	# Create package directories
+
+install-docs:
+	# Create documentation directories
+	$(INSTALL) --directory --mode 755 $(DESTDIR)$(docdir)
+	# Install doc files
+	if [ -r README ] ; then $(INSTALL) --mode 0644 README $(DESTDIR)$(docdir) ; fi
+	if [ -r ChangeLog ] ; then $(INSTALL) --mode 0644 ChangeLog $(DESTDIR)$(docdir) ; fi
+
+install-files: install-config install-sql install-sh install-logrotate
+	# Install files
+
+install-config:
+	# Install config files
+	if [ -r config.vars ] ; then \
+	    $(INSTALL) --mode 664 config.vars $(DESTDIR)$(confdir)/$(PACKAGE_NAME).conf ; \
+	fi
+	if [ -r define.sql ] ; then \
+	    $(INSTALL) --mode 664 define.sql $(DESTDIR)$(confdir)/$(PACKAGE_NAME)-define.sql ; \
+	fi
+
+sql/procedures/oradba_audit_clean_w.sql : sql/procedures/oradba_audit_clean.sql
+	$(WRAP) iname=$< oname=$@
+
+sql/procedures/oradba_audit_ddl_proc_w.sql : sql/procedures/oradba_audit_ddl_proc.sql
+	$(WRAP) iname=$< oname=$@
+
+install-sql: sql/procedures/oradba_audit_ddl_proc_w.sql sql/procedures/oradba_audit_clean_w.sql
+	# Install sql-files
+	for f in `ls sql/*.sql *.sql 2>/dev/null | grep -v 'define\.sql' ` ; do \
+	  [ -z "$$f" ] && continue; \
+	  $(INSTALL) --mode 644 $$f $(DESTDIR)$(datadir) ; \
+	done
+	for f in `ls sql/tables/*.sql 2>/dev/null` ; do \
+	  [ -z "$$f" ] && continue; \
+	  $(INSTALL) --mode 644 $$f $(DESTDIR)$(datadir)/tables ; \
+	done
+	for f in `ls sql/procedures/*.sql 2>/dev/null | grep -v 'oradba_audit_\(clean\|ddl_proc\)\.sql'` ; do \
+	  [ -z "$$f" ] && continue; \
+	  $(INSTALL) --mode 644 $$f $(DESTDIR)$(datadir)/procedures ; \
+	done
+	for f in `ls sql/*.sql 2>/dev/null` ; do \
+	  [ -z "$$f" ] && continue; \
+	  $(INSTALL) --mode 644 $$f $(DESTDIR)$(datadir) ; \
+	done
+
+install-sh:
+	# Install scripts
+	for f in `ls -1 *.sh | grep -v 'build.*.sh' 2>/dev/null` ; do \
+	  [ -z "$$f" ] && continue; \
+	  $(INSTALL) --mode 755 $$f $(DESTDIR)$(libexecdir) ; \
+	done
+
+install-logrotate:
+	# Install logrotate configuration
+	if [ -f logrotate.conf ] ; then \
+	    $(INSTALL) -D --mode 644 logrotate.conf $(DESTDIR)$(sysconfdir)/logrotate.d/$(PACKAGE_NAME).conf; \
+	fi
+
+clean:
+	fakeroot debian/rules clean || true
+
+distclean: clean
+	rm -fv install.sql uninstall.sql _pkg-functions
+	rm -fv sql/procedures/*_w.sql
+	rm -fv Makefile config.h config.status config.cache config.log build_expand.sh
+	rm -rf autom4te.cache
+	find . -type f -iwholename '*~' -exec rm -fv {} ';'
+	if [ -d inst ]; then rm -rf inst; fi
+
+mostlyclean: clean
+
+maintainer-clean: clean
+
+# automatic re-running of configure if the configure.ac file has changed
+${srcdir}/configure: configure.ac
+	cd ${srcdir} && autoconf
+
+Makefile: Makefile.in config.status
+	./config.status
+
+config.status: configure
+	./config.status --recheck
