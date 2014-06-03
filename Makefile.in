@@ -9,6 +9,7 @@ srcdir          = @srcdir@
 VPATH           = @srcdir@
 
 # Package identification -----------------------------------------------------------------
+SECTION         = @SECTION@
 PACKAGE_NAME    = @PACKAGE_NAME@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
