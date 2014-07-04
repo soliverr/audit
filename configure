@@ -1247,9 +1247,9 @@ if test -n "$ac_init_help"; then
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-logdir=DIR       Directory for logfiles LOCALSTATEDIR/log/oracle/SECTION/PACKAGE_NAME
+  --with-logdir=DIR       Directory for logfiles LOCALSTATEDIR/log/SECTION/PACKAGE_NAME
   --with-confdir=DIR      Directory for config files SYSCONFDIR/oracle/SECTION
-  --with-spooldir=DIR      Directory for spool files LOCALSTATEDIR/spool/oracle/SECTION/PACKAGE_NAME
+  --with-spooldir=DIR      Directory for spool files LOCALSTATEDIR/spool/SECTION/PACKAGE_NAME
 
 Report bugs to <soliverr@gmail.com>.
 _ACEOF
@@ -1748,7 +1748,7 @@ $as_echo "$docdir" >&6; }
 
 
 
-logdir='${localstatedir}/log/oracle/${SECTION}/${PACKAGE_NAME}'
+logdir='${localstatedir}/log/${SECTION}/${PACKAGE_NAME}'
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking logdir" >&5
 $as_echo_n "checking logdir... " >&6; }
 
@@ -1772,7 +1772,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $logdir" >&5
 $as_echo "$logdir" >&6; }
 
-confdir='${sysconfdir}/oracle/${SECTION}'
+confdir='${sysconfdir}/${SECTION}'
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking confdir" >&5
 $as_echo_n "checking confdir... " >&6; }
 
@@ -1796,7 +1796,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $confdir" >&5
 $as_echo "$confdir" >&6; }
 
-spooldir='${localstatedir}/spool/oracle/${SECTION}/${PACKAGE_NAME}'
+spooldir='${localstatedir}/spool/${SECTION}/${PACKAGE_NAME}'
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking spooldir" >&5
 $as_echo_n "checking spooldir... " >&6; }
 

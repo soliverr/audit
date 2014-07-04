@@ -1,0 +1,6 @@
+oradba-audit
+============
+
+Log Oracle database DDL changes.
+
+ -- Kryazhevskikh Sergey <soliverr@gmail.com>

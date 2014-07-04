@@ -1,0 +1,13 @@
+Source: oradba-audit
+Section: utils
+Priority: required
+Maintainer: Kryazhevskikh Sergey, <soliverr@gmail.com>
+Build-Depends: debhelper (>= 5), oracle-client
+Standards-Version: 3.7.2
+
+Package: oradba-audit
+Architecture: all
+Depends: oracle-client, oradba-sqlinstaller (>=3.1-2), oradba-schema (>= 4.0)
+Description: DDL audit.
+ DDL audit log.
+ .

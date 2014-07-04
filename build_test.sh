@@ -17,7 +17,7 @@ destdir=inst
 
 rm -rf $destdir 2>&-
 
-./configure --with-spooldir=/var/log/oracle/oradba
+./configure --with-spooldir=/var/log/oradba
 
 make install DESTDIR=$destdir || exit 1
 
