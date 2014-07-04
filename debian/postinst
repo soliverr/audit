@@ -27,8 +27,8 @@ _attr() {
 
 # Set filesystems rights
 if [ "$1" = "configure" ] ; then
-  dpkg -s "rias-$PACKAGE_NAME" | grep "etc/" | cut -d ' ' -f 2 | while read f ; do
-    _attr 664 root:oinstall $f
+  dpkg -s "oradba-$PACKAGE_NAME" | grep "etc/" | cut -d ' ' -f 2 | while read f ; do
+    _attr 664 oraclet:oinstall $f
   done
 fi
 
