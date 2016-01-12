@@ -132,6 +132,7 @@ distclean: clean
 	rm -rf autom4te.cache
 	find . -type f -iwholename '*~' -exec rm -fv {} ';'
 	if [ -d inst ]; then rm -rf inst; fi
+	if [ -d test ]; then rm -rf test; fi
 
 mostlyclean: clean
 
