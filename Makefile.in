@@ -77,7 +77,7 @@ install-config:
 sql/procedures/oradba_audit_clean_w.sql : sql/procedures/oradba_audit_clean.sql
 	if [ -x $(WRAP) ] ; then \
 	    $(WRAP) iname=$< oname=$@ ; \
-	else
+	else \
 	    echo "Can't find Oracle wrap utility. Procedure audit_clean is not wrapped..." ; \
 	    cp $< $@ ; \
 	fi
@@ -85,7 +85,7 @@ sql/procedures/oradba_audit_clean_w.sql : sql/procedures/oradba_audit_clean.sql
 sql/procedures/oradba_audit_ddl_proc_w.sql : sql/procedures/oradba_audit_ddl_proc.sql
 	if [ -x $(WRAP) ] ; then \
 	    $(WRAP) iname=$< oname=$@ ; \
-	else
+	else \
 	    echo "Can't find Oracle wrap utility. Procedure audit_ddl is not wrapped..." ; \
 	    cp $< $@ ; \
 	fi
